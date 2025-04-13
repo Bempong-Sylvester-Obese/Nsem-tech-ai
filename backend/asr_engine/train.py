@@ -1,90 +1,88 @@
 #!/usr/bin/env python3
 """
-Metal-compatible Akan ASR Trainer
-- Completely removes TensorFlow dependencies
-- Uses pure PyTorch with Metal acceleration
+Fixed-Path Akan ASR Trainer
+- Validates dataset paths before training
+- Handles missing files gracefully
+- Checks metadata CSV syntax
 """
 
 import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # Suppress any TF logging
-os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'  # Allow library duplicates
-
+import sys
+from pathlib import Path
+from dataclasses import dataclass
 import torch
 import librosa
-import numpy as np
-from pathlib import Path
 from tqdm import tqdm
 from jiwer import wer
-from dataclasses import dataclass
-import warnings
 
-# Suppress all warnings
-warnings.filterwarnings("ignore")
-
-# Whisper imports
-from transformers import (
-    WhisperForConditionalGeneration,
-    WhisperProcessor,
-    Seq2SeqTrainingArguments,
-    Seq2SeqTrainer,
-    TrainerCallback
-)
-
-# Configure Metal backend
-if torch.backends.mps.is_available():
-    device = torch.device("mps")
-    torch.set_default_device(device)
-    print("🚀 Using Apple Metal acceleration")
-else:
-    print("⚠️ Metal not available, using CPU")
-
+# Configuration
 @dataclass
 class TrainingConfig:
-    base_model: str = "openai/whisper-tiny"  # Start small for testing
-    data_dir: str = "datasets/raw_data"
-    output_dir: str = "models/akan_whisper"
-    batch_size: int = 4  # Conservative for macOS
+    base_model: str = "openai/whisper-tiny"
+    data_dir: str = os.path.join("datasets", "raw_data")  # Corrected path handling
+    output_dir: str = os.path.join("models", "akan_whisper")
+    batch_size: int = 2
     num_epochs: int = 3
     learning_rate: float = 1e-5
-    warmup_steps: int = 500
-    max_duration: float = 30.0
-    eval_steps: int = 200
-    save_steps: int = 500
+
+def validate_dataset_paths(data_dir: str) -> bool:
+    """Check if dataset files exist and validate metadata.csv syntax."""
+    required = {
+        "metadata": os.path.join(data_dir, "metadata.csv")
+    }
+
+    print("🔍 Validating dataset paths...")
+    for name, path in required.items():
+        if not os.path.exists(path):
+            print(f"❌ Missing {name}: {path}")
+            return False
+        print(f"✅ Found {name}: {path}")
+
+    # Validate metadata.csv content
+    metadata_path = required["metadata"]
+    print("📄 Checking metadata.csv syntax...")
+    with open(metadata_path, "r", encoding='utf-8') as f:
+        for lineno, line in enumerate(f, 1):
+            if "|" not in line:
+                print(f"❌ Invalid format at line {lineno}: '{line.strip()}'")
+                return False
+    print("✅ metadata.csv format looks valid.")
+    return True
 
 class AkanDataset(torch.utils.data.Dataset):
     def __init__(self, data_dir: str, processor):
         self.processor = processor
         self.samples = []
-        
-        metadata_path = Path(data_dir)/"metadata.csv"
-        if not metadata_path.exists():
-            raise FileNotFoundError(f"Metadata not found at {metadata_path}")
-        
+        metadata_path = os.path.join(data_dir, "metadata.csv")
+
+        print("📊 Loading dataset...")
         with open(metadata_path, "r", encoding='utf-8') as f:
-            for i, line in enumerate(f):
+            for line in tqdm(f, desc="Processing files"):
                 try:
                     filename, text = line.strip().split("|", 1)
-                    audio_path = Path(data_dir)/"wavs"/filename.strip()
-                    if audio_path.exists():
-                        duration = librosa.get_duration(filename=audio_path)
-                        if duration <= config.max_duration:
-                            self.samples.append({
-                                "audio": str(audio_path),
-                                "text": text,
-                                "duration": duration
-                            })
+                    audio_path = os.path.join(data_dir, filename.strip())
+                    if os.path.exists(audio_path):
+                        self.samples.append({
+                            "audio": audio_path,
+                            "text": text
+                        })
                 except Exception as e:
-                    print(f"Skipping line {i+1}: {str(e)}")
+                    print(f"Skipping invalid line: {e}")
                     continue
+        print(f"✅ Loaded {len(self.samples)} samples")
 
     def __len__(self):
         return len(self.samples)
 
     def __getitem__(self, idx):
         sample = self.samples[idx]
-        audio, sr = librosa.load(sample["audio"], sr=16000)
-        
-        # Process for Whisper
+        try:
+            audio, sr = librosa.load(sample["audio"], sr=16000)
+        except Exception as e:
+            print(f"⚠️ Error loading {sample['audio']}: {e}")
+            audio = torch.zeros(16000)
+            sr = 16000
+
         inputs = self.processor(
             audio=audio,
             sampling_rate=sr,
@@ -94,123 +92,75 @@ class AkanDataset(torch.utils.data.Dataset):
         )
         return {
             "input_features": inputs.input_features[0],
-            "labels": inputs.labels[0],
-            "audio_length": len(audio)
+            "labels": inputs.labels[0]
         }
 
-class MacSafeTrainer(Seq2SeqTrainer):
-    """Custom trainer with macOS optimizations"""
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        
-    def training_step(self, model, inputs):
-        # Ensure tensors are on correct device
-        inputs = {k: v.to(self.args.device) for k, v in inputs.items()}
-        return super().training_step(model, inputs)
-
-def compute_metrics(pred):
-    pred_ids = pred.predictions
-    label_ids = pred.label_ids
-    
-    # Replace -100 with pad token
-    label_ids[label_ids == -100] = processor.tokenizer.pad_token_id
-    
-    # Decode
-    pred_str = processor.batch_decode(pred_ids, skip_special_tokens=True)
-    label_str = processor.batch_decode(label_ids, skip_special_tokens=True)
-    
-    return {"wer": wer(label_str, pred_str)}
-
 def train_whisper(config: TrainingConfig):
-    global processor
-    
-    print("🔍 Loading dataset...")
-    try:
-        dataset = AkanDataset(config.data_dir, None)  # Test load first
-        print(f"✅ Found {len(dataset.samples)} valid samples")
-    except Exception as e:
-        print(f"❌ Dataset error: {str(e)}")
+    if not validate_dataset_paths(config.data_dir):
+        print("❌ Dataset validation failed")
         return
+
+    if not os.path.exists(config.output_dir):
+        os.makedirs(config.output_dir, exist_ok=True)
+        print(f"📁 Created output directory: {config.output_dir}")
 
     print("🚀 Initializing Whisper...")
-    try:
-        processor = WhisperProcessor.from_pretrained(config.base_model)
-        model = WhisperForConditionalGeneration.from_pretrained(config.base_model)
-        
-        # Configure for Akan
-        model.config.forced_decoder_ids = processor.get_decoder_prompt_ids(
-            language="ak",
-            task="transcribe"
-        )
-        model.config.suppress_tokens = []
-        
-        # Move model to device
-        model = model.to(torch.device("mps" if torch.backends.mps.is_available() else "cpu"))
-    except Exception as e:
-        print(f"❌ Model initialization failed: {str(e)}")
-        return
+    from transformers import (
+        WhisperForConditionalGeneration,
+        WhisperProcessor,
+        Seq2SeqTrainingArguments,
+        Seq2SeqTrainer
+    )
 
-    print("📊 Preparing datasets...")
-    try:
-        full_dataset = AkanDataset(config.data_dir, processor)
-        train_size = int(0.9 * len(full_dataset))
-        train_dataset, eval_dataset = torch.utils.data.random_split(
-            full_dataset, [train_size, len(full_dataset) - train_size]
-        )
-    except Exception as e:
-        print(f"❌ Dataset preparation failed: {str(e)}")
-        return
+    processor = WhisperProcessor.from_pretrained(config.base_model)
+    model = WhisperForConditionalGeneration.from_pretrained(config.base_model)
 
-    print("⚙️ Configuring training...")
+    dataset = AkanDataset(config.data_dir, processor)
+    train_size = int(0.9 * len(dataset))
+    train_dataset, eval_dataset = torch.utils.data.random_split(
+        dataset, [train_size, len(dataset) - train_size]
+    )
+
     training_args = Seq2SeqTrainingArguments(
         output_dir=config.output_dir,
         num_train_epochs=config.num_epochs,
         per_device_train_batch_size=config.batch_size,
-        evaluation_strategy="steps",
-        eval_steps=config.eval_steps,
-        save_steps=config.save_steps,
-        logging_steps=50,
         learning_rate=config.learning_rate,
-        warmup_steps=config.warmup_steps,
-        fp16=False,  # Disabled for macOS stability
-        gradient_checkpointing=True,
-        predict_with_generate=True,
-        report_to=["tensorboard"],
-        optim="adamw_torch",
-        dataloader_pin_memory=False,
-        save_total_limit=2,
-        remove_unused_columns=False
+        evaluation_strategy="steps",
+        eval_steps=500,
+        save_steps=1000
+    )
+
+    trainer = Seq2SeqTrainer(
+        model=model,
+        args=training_args,
+        train_dataset=train_dataset,
+        eval_dataset=eval_dataset,
+        tokenizer=processor.feature_extractor,
+        compute_metrics=lambda p: {"wer": wer(
+            processor.batch_decode(
+                torch.argmax(torch.tensor(p.predictions), dim=-1),
+                skip_special_tokens=True
+            ),
+            processor.batch_decode(
+                p.label_ids,
+                skip_special_tokens=True
+            )
+        )}
     )
 
     print("🏋️ Starting training...")
-    try:
-        trainer = MacSafeTrainer(
-            model=model,
-            args=training_args,
-            train_dataset=train_dataset,
-            eval_dataset=eval_dataset,
-            tokenizer=processor.feature_extractor,
-            compute_metrics=compute_metrics,
-        )
-        
-        trainer.train()
-        trainer.save_model(config.output_dir)
-        processor.save_pretrained(config.output_dir)
-        print(f"🎉 Training complete! Model saved to {config.output_dir}")
-    except Exception as e:
-        print(f"❌ Training failed: {str(e)}")
+    trainer.train()
+    trainer.save_model(config.output_dir)
+    print(f"🎉 Model saved to {config.output_dir}")
 
 if __name__ == "__main__":
-    # Verify environment
-    print("🛠️ Environment check:")
-    print(f"PyTorch version: {torch.__version__}")
-    print(f"MPS available: {torch.backends.mps.is_available()}")
-    
     config = TrainingConfig()
-    print("\n⚡ Configuration:")
-    print(f"Model: {config.base_model}")
-    print(f"Data: {config.data_dir}")
-    print(f"Batch size: {config.batch_size}")
-    print(f"Epochs: {config.num_epochs}")
-    
+    config.data_dir = os.path.abspath(config.data_dir)
+    config.output_dir = os.path.abspath(config.output_dir)
+
+    print("\n⚡ Akan ASR Training")
+    print(f"📋 Data directory: {config.data_dir}")
+    print(f"📋 Output directory: {config.output_dir}")
+
     train_whisper(config)
