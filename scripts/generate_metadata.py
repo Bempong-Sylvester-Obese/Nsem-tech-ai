@@ -1,37 +1,49 @@
-import os
-import librosa
-import pandas as pd
+#!/opt/homebrew/lib python3
+"""
+Auto-generates metadata.csv for MP3 audio dataset
+"""
 
-# Directory containing the raw audio files
-wav_dir = 'datasets/raw_data/wavs'
+from pathlib import Path
+import csv
 
-# List to store metadata info
-metadata = []
+# Configuration
+AUDIO_DIR = Path("datasets/raw_data/wavs")  # Keep this path even for MP3 files
+METADATA_PATH = Path("datasets/raw_data/metadata.csv")
 
-# Iterate over each file in the directory
-for filename in os.listdir(wav_dir):
-    if filename.endswith('.wav'):  # Only process .wav files
-        file_path = os.path.join(wav_dir, filename)
+def generate_metadata():
+    # Find all MP3 files (case insensitive)
+    audio_files = sorted(
+        f for f in AUDIO_DIR.glob("*") 
+        if f.suffix.lower() == '.mp3'
+    )
+    
+    if not audio_files:
+        print(f"❌ No MP3 files found in {AUDIO_DIR}")
+        print("Please ensure:")
+        print(f"1. Your audio files are in {AUDIO_DIR}")
+        print("2. Files have .mp3 extension (case doesn't matter)")
+        return False
+
+    print(f"✅ Found {len(audio_files)} MP3 files")
+    
+    # Generate metadata.csv
+    with open(METADATA_PATH, 'w', encoding='utf-8', newline='') as csvfile:
+        writer = csv.writer(csvfile, delimiter='|', quoting=csv.QUOTE_MINIMAL)
         
-        # Load the audio file using librosa
-        audio, sr = librosa.load(file_path, sr=None)  # sr=None keeps the original sample rate
-        
-        # Extract the duration of the audio file
-        duration = librosa.get_duration(y=audio, sr=sr)
-        
-        # Extract metadata from the filename (this depends on your naming convention)
-        # Example: "speaker_001_sentence_01.wav"
-        parts = filename.split('_')
-        speaker_id = parts[0]  # e.g., 'speaker_001'
-        sentence_id = parts[1]  # e.g., 'sentence_01'
-        
-        # Append the data to the metadata list
-        metadata.append([filename, speaker_id, sentence_id, duration, sr])
+        for audio_file in audio_files:
+            # Format: filename|transcription (empty transcription)
+            writer.writerow([audio_file.name, ""])
+    
+    print(f"📄 Generated {METADATA_PATH} with {len(audio_files)} entries")
+    print("\nNext steps:")
+    print(f"1. Edit {METADATA_PATH} to add transcriptions")
+    print("2. Format should be: filename.mp3|transcription_text")
+    print("3. Save the file when done")
+    return True
 
-# Create a DataFrame from the metadata list
-metadata_df = pd.DataFrame(metadata, columns=['filename', 'speaker_id', 'sentence_id', 'duration', 'sample_rate'])
-
-# Save the DataFrame to a CSV file
-metadata_df.to_csv('metadata.csv', index=False)
-
-print("metadata.csv generated successfully!")
+if __name__ == "__main__":
+    if not AUDIO_DIR.exists():
+        print(f"❌ Error: Directory not found - {AUDIO_DIR}")
+        print("Please ensure your audio files are in datasets/raw_data/wavs/")
+    else:
+        generate_metadata()
