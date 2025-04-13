@@ -1,5 +1,6 @@
 Nsem-tech-ai/
 ├── .github/                     # CI/CD workflows
+|-- .venv                        #Virtual Environment
 |-- .vscode                      .json,extensions, and config files
 |
 ├── backend/                      # Core AI/API services
