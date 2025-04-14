@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/opt/homebrew/lib python3
 """
 Fixed-Path Akan ASR Trainer
 - Validates dataset paths before training
