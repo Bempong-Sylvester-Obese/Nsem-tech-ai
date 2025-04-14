@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/opt/homebrew/lib python3
 """
 Fixed Akan Dataset Preprocessor
 - Handles correct dataset paths

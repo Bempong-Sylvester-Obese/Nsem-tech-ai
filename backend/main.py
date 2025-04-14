@@ -5,7 +5,7 @@ import os
 
 app = FastAPI()
 
-# Initialize SQLite DB (add function)
+# Initialize SQLite B
 def init_db():
     conn = sqlite3.connect("phrases.db")
     cursor = conn.cursor()
