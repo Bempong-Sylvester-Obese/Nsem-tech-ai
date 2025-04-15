@@ -32,4 +32,4 @@ def fix_transcriptions():
     )
 
 if __name__ == "__main__":
-    fix_transcriptions()
+    fix_transcriptions() 
