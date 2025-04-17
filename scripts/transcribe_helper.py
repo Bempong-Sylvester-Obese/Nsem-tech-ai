@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/opt/homebrew/lib python3
 """
 Akan Transcription Assistant
 - Plays each MP3 and lets you type the transcription
