@@ -19,7 +19,7 @@ def init_db():
     conn.commit()
     conn.close()
 
-# Cache a phrase (add function)
+# Cache phrase
 def cache_phrase(text: str, audio_path: str):
     conn = sqlite3.connect("phrases.db")
     cursor = conn.cursor()
