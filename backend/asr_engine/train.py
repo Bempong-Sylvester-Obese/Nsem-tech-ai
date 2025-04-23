@@ -1,7 +1,7 @@
 #!/opt/homebrew/bin/python3
 """
 Fixed-Path Akan ASR Trainer (Updated Version)
-- Handles your exact metadata.csv format
+- Handles exact metadata.csv format
 - Robust path resolution
 - Better error messages
 """
@@ -20,7 +20,7 @@ import pandas as pd
 @dataclass
 class TrainingConfig:
     base_model: str = "openai/whisper-tiny"
-    data_dir: str = "/Users/samanthabempnog/Desktop/Nsem-tech-ai-1/datasets/raw_data"  # Absolute path
+    data_dir: str = "/Users/samanthabempnog/Desktop/Nsem-tech-ai-1/datasets/raw_data/wavs"  # Absolute path
     output_dir: str = "/Users/samanthabempnog/Desktop/Nsem-tech-ai-1/models/akan_whisper"
     batch_size: int = 2
     num_epochs: int = 3
