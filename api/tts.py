@@ -107,7 +107,7 @@ async def get_audio(filename: str):
     audio_path = VOICES_DIR / filename
     if not audio_path.exists():
         raise HTTPException(404, "Audio not found")
-    return FileResponse(audio_path)  # <-- NOW PROPERLY IMPORTED
+    return FileResponse(audio_path)  
 
 if __name__ == "__main__":
     import uvicorn
