@@ -46,4 +46,4 @@ async def text_to_speech(text: str, lang: str = "ak"):  # "ak" = Twi in gTTS
         cache_phrase(text, filename)  # Save to DB
         return {"status": "success", "file": filename}
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))  # Now HTTPException is defined
+        raise HTTPException(status_code=400, detail=str(e))  # defined HTTPException
