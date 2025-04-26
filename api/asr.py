@@ -49,7 +49,7 @@ class AkanASR:
         """Initialize ASR model with Akan optimizations"""
         if MODEL_TYPE == "whisper":
             try:
-                # Try to load fine-tuned model first
+                # load fine-tuned model first
                 self.processor = WhisperProcessor.from_pretrained(MODEL_DIR)
                 self.model = WhisperForConditionalGeneration.from_pretrained(MODEL_DIR)
                 print("✅ Loaded fine-tuned Akan model")
@@ -111,7 +111,7 @@ async def train_akan_model(epochs: int = 3):
             optim="adamw_torch"
         )
         
-        # 4. Create Trainer
+        # 4. Trainer Creation
         trainer = Seq2SeqTrainer(
             model=model,
             args=training_args,
@@ -120,7 +120,7 @@ async def train_akan_model(epochs: int = 3):
             tokenizer=processor.feature_extractor,
         )
         
-        # 5. Start training
+        # 5. training
         trainer.train()
         trainer.save_model(MODEL_DIR)
         processor.save_pretrained(MODEL_DIR)
