@@ -46,7 +46,7 @@ class PreviewTTS:
         if lang not in self.available_langs:
             raise ValueError(f"Unsupported language: {lang}")
 
-        # Check cache
+        # Check audio cache
         text_hash = hashlib.md5(f"{text}_{lang}".encode()).hexdigest()
         with sqlite3.connect("tts_preview.db") as conn:
             cursor = conn.cursor()
