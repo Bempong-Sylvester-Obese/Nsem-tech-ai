@@ -1,8 +1,3 @@
-#!/opt/homebrew/lib python3
-"""
-Auto-generates metadata.csv for MP3 audio dataset
-"""
-
 from pathlib import Path
 import csv
 

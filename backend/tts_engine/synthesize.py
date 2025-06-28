@@ -1,9 +1,3 @@
-#!/opt/homebrew/bin/python3
-"""
-Akan TTS Synthesis Engine
-Nsem Tech AI - Optimized for Ghanaian Speech Patterns
-"""
-
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from pydub import AudioSegment
@@ -31,7 +25,6 @@ class AkanTTS:
         self.akan_phonemes = self._load_phoneme_map()
     
     def _init_db(self):
-        """Initialize TTS cache database"""
         with sqlite3.connect(TTS_DB) as conn:
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS tts_cache (
@@ -42,20 +35,17 @@ class AkanTTS:
             """)
     
     def _load_phoneme_map(self):
-        """Akan-specific pronunciation rules"""
         return {
             "ɛ": "eh", "ɔ": "oh", "kyɛw": "chi-ao",
             "Ɛ": "EH", "Ɔ": "OH", "dw": "du"
         }
     
     def _clean_text(self, text: str) -> str:
-        """Normalize Akan text for TTS"""
         for akan, eng in self.akan_phonemes.items():
             text = text.replace(akan, eng)
         return text
     
     def synthesize(self, text: str, voice: str = "male") -> Path:
-        """Generate speech from text"""
         # Validate voice option
         if voice not in VOICE_OPTIONS:
             raise ValueError(f"Invalid voice type. Choose from: {list(VOICE_OPTIONS.keys())}")
@@ -90,7 +80,6 @@ class AkanTTS:
                     "INSERT INTO tts_cache VALUES (?, ?, ?)",
                     (text_hash, str(wav_path), voice)
                 )
-            
             return wav_path
         
         except Exception as e:
@@ -106,11 +95,6 @@ async def text_to_speech(
     voice: str = "male",
     format: str = "wav"
 ):
-    """
-    Generate Akan speech from text
-    Example:
-    curl -X POST "http://localhost:8001/synthesize?text=Me+din+de+Kwame&voice=male"
-    """
     try:
         audio_path = tts_engine.synthesize(text, voice)
         
@@ -127,9 +111,7 @@ async def text_to_speech(
 
 @app.on_event("startup")
 async def startup():
-    """Preload common phrases"""
     common_phrases = [
-        "Me din de Kwame", "Mepa wo kyɛw", "Ɛte sɛn?"
     ]
     for phrase in common_phrases:
         for voice in VOICE_OPTIONS:
