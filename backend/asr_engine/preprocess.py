@@ -1,10 +1,3 @@
-#!/opt/homebrew/lib python3
-"""
-Fixed Akan Dataset Preprocessor
-- Handles correct dataset paths
-- Robust error checking
-"""
-
 import pandas as pd
 from pathlib import Path
 import librosa
@@ -13,7 +6,6 @@ import os
 import sys
 
 def preprocess_dataset(dataset_path="datasets/raw_data", output_dir="processed_akan"):
-    """Process Akan audio dataset with proper path handling"""
     try:
         # Convert to Path objects
         dataset_path = Path(dataset_path)

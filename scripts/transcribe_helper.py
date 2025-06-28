@@ -1,11 +1,3 @@
-#!/opt/homebrew/lib python3
-"""
-Akan Transcription Assistant
-- Plays each MP3 and lets you type the transcription
-- Saves progress automatically
-- Skips already transcribed files
-"""
-
 import os
 import csv
 from pathlib import Path

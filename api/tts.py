@@ -1,10 +1,3 @@
-#!/opt/homebrew/lib python3
-"""
-TTS Service for Nsem Tech AI (Pre-Dataset Phase)
-- Uses Google TTS with Ghanaian accent as fallback
-- Structured for easy upgrade to custom models later
-"""
-
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse  
 from gtts import gTTS
@@ -28,7 +21,6 @@ class PreviewTTS:
         self._init_db()
 
     def _init_db(self):
-        """Initialize phrase cache"""
         conn = sqlite3.connect("tts_preview.db")
         cursor = conn.cursor()
         cursor.execute("""
@@ -42,7 +34,6 @@ class PreviewTTS:
         conn.close()
 
     def generate_audio(self, text: str, lang: str = "ak") -> Path:
-        """Generate speech using available services"""
         if lang not in self.available_langs:
             raise ValueError(f"Unsupported language: {lang}")
 
@@ -86,10 +77,6 @@ async def speak(
     lang: str = "ak",
     speed: float = 1.0
 ):
-    """
-    Basic TTS endpoint for prototype
-    Example: /speak?text=Maakye&lang=ak
-    """
     try:
         audio_path = tts.generate_audio(text, lang)
         return {
@@ -103,7 +90,6 @@ async def speak(
 
 @app.get("/audio/{filename}")
 async def get_audio(filename: str):
-    """Serve generated audio files"""
     audio_path = VOICES_DIR / filename
     if not audio_path.exists():
         raise HTTPException(404, "Audio not found")

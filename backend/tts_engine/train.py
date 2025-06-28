@@ -1,15 +1,9 @@
-#!/opt/homebrew/bin/python3
-"""
-Akan TTS Trainer
-Nsem Tech AI - Custom Voice Model Training
-"""
-
 import os
 import torch
 from pathlib import Path
 from datetime import datetime
 from fastapi import FastAPI, HTTPException
-from typing import Optional
+from typing import Optional, Dict, Any, List, Union
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
@@ -25,16 +19,15 @@ BATCH_SIZE = 4  # Reduced for M1 memory
 MAX_AUDIO_LENGTH = 10.0  # Seconds
 SAMPLE_RATE = 22050
 
-app =FastAPI(title="Nsem TTS Trainer")
+app = FastAPI(title="Nsem TTS Trainer")
 
 class AkanTTSTrainer:
     def __init__(self):
-        self.model = None
-        self.tokenizer = None
+        self.model: Optional[VitsModel] = None
+        self.tokenizer: Optional[VitsTokenizer] = None
         self.device = "mps" if torch.backends.mps.is_available() else "cpu"
         
-    def _prepare_dataset(self):
-        """Convert metadata.csv to Hugging Face Dataset"""
+    def _prepare_dataset(self) -> Dataset:
         metadata_path = Path(TTS_DATA_DIR) / "metadata.csv"
         
         if not metadata_path.exists():
@@ -45,15 +38,17 @@ class AkanTTSTrainer:
         df["audio_path"] = df["file"].apply(lambda x: str(Path(TTS_DATA_DIR) / "wavs" / x))
         
         # Validate audio files
-        valid_samples = []
+        valid_samples: List[Dict[str, str]] = []
         for _, row in tqdm(df.iterrows(), desc="Validating audio files"):
             try:
-                audio, sr = sf.read(row["audio_path"])
+                audio_path = str(row["audio_path"])
+                text = str(row["text"])
+                audio, sr = sf.read(audio_path)
                 duration = len(audio) / sr
                 if duration <= MAX_AUDIO_LENGTH:
                     valid_samples.append({
-                        "text": row["text"],
-                        "audio": row["audio_path"]
+                        "text": text,
+                        "audio": audio_path
                     })
             except:
                 continue
@@ -63,8 +58,7 @@ class AkanTTSTrainer:
             "audio": [x["audio"] for x in valid_samples]
         }).cast_column("audio", Audio(sampling_rate=SAMPLE_RATE))
     
-    def train(self, epochs: int = 100, lr: float = 1e-4):
-        """Fine-tune VITS model on Akan data"""
+    def train(self, epochs: int = 100, lr: float = 1e-4) -> Dict[str, Any]:
         try:
             # 1. Prepare data
             dataset = self._prepare_dataset()
@@ -72,7 +66,16 @@ class AkanTTSTrainer:
             
             # 2. Load base model (English as starting point)
             self.tokenizer = VitsTokenizer.from_pretrained("facebook/mms-tts-eng")
-            self.model = VitsModel.from_pretrained("facebook/mms-tts-eng").to(self.device)
+            model_result = VitsModel.from_pretrained("facebook/mms-tts-eng")
+            if isinstance(model_result, tuple):
+                self.model = model_result[0]
+            else:
+                self.model = model_result
+            if self.model is not None:
+                self.model.to(self.device)  # type: ignore
+            
+            if self.model is None or self.tokenizer is None:
+                raise RuntimeError("Failed to load model or tokenizer")
             
             # 3. Training setup
             optimizer = torch.optim.AdamW(self.model.parameters(), lr=lr)
@@ -85,12 +88,20 @@ class AkanTTSTrainer:
                 epoch_loss = 0.0
                 
                 for batch in tqdm(train_test["train"], desc=f"Epoch {epoch+1}"):
+                    # Access dataset items properly
+                    text = batch["text"] if isinstance(batch, dict) else batch[0]["text"]
+                    audio_data = batch["audio"]["array"] if isinstance(batch, dict) else batch[0]["audio"]["array"]
+                    
+                    if self.tokenizer is None:
+                        raise RuntimeError("Tokenizer is None")
+                    
                     inputs = self.tokenizer(
-                        batch["text"], 
-                        audio=batch["audio"]["array"],
+                        text, 
+                        audio=audio_data,
                         sampling_rate=SAMPLE_RATE,
                         return_tensors="pt"
-                    ).to(self.device)
+                    )
+                    inputs = {k: v.to(self.device) if hasattr(v, 'to') else v for k, v in inputs.items()}
                     
                     optimizer.zero_grad()
                     outputs = self.model(**inputs)
@@ -103,15 +114,19 @@ class AkanTTSTrainer:
                 # Save checkpoint
                 if (epoch + 1) % 10 == 0:
                     checkpoint_dir = Path(TTS_MODEL_DIR) / f"epoch_{epoch+1}"
-                    self.model.save_pretrained(checkpoint_dir)
-                    self.tokenizer.save_pretrained(checkpoint_dir)
+                    if self.model is not None:
+                        self.model.save_pretrained(checkpoint_dir)
+                    if self.tokenizer is not None:
+                        self.tokenizer.save_pretrained(checkpoint_dir)
                     print(f"💾 Saved checkpoint to {checkpoint_dir}")
                 
                 print(f"Epoch {epoch+1} Loss: {epoch_loss/len(train_test['train']):.4f}")
             
             # 5. Save final model
-            self.model.save_pretrained(TTS_MODEL_DIR)
-            self.tokenizer.save_pretrained(TTS_MODEL_DIR)
+            if self.model is not None:
+                self.model.save_pretrained(TTS_MODEL_DIR)
+            if self.tokenizer is not None:
+                self.tokenizer.save_pretrained(TTS_MODEL_DIR)
             return {"status": "success", "model_dir": TTS_MODEL_DIR}
             
         except Exception as e:
@@ -122,14 +137,19 @@ async def start_training(
     epochs: int = 100,
     learning_rate: float = 1e-4,
     resume: bool = False
-):
-    """Start TTS model training"""
+) -> Dict[str, Any]:
     trainer = AkanTTSTrainer()
     
     if resume and Path(TTS_MODEL_DIR).exists():
         try:
             trainer.tokenizer = VitsTokenizer.from_pretrained(TTS_MODEL_DIR)
-            trainer.model = VitsModel.from_pretrained(TTS_MODEL_DIR).to(trainer.device)
+            model_result = VitsModel.from_pretrained(TTS_MODEL_DIR)
+            if isinstance(model_result, tuple):
+                trainer.model = model_result[0]
+            else:
+                trainer.model = model_result
+            if trainer.model is not None:
+                trainer.model.to(trainer.device)  # type: ignore
             print("♻️ Resuming from existing model")
         except:
             print("⚠️ Failed to load existing model, starting fresh")
@@ -137,18 +157,27 @@ async def start_training(
     return trainer.train(epochs=epochs, lr=learning_rate)
 
 @app.post("/synthesize")
-async def test_synthesis(text: str):
-    """Test current model"""
+async def test_synthesis(text: str) -> FileResponse:
     trainer = AkanTTSTrainer()
     
     if not trainer.model:
         try:
             trainer.tokenizer = VitsTokenizer.from_pretrained(TTS_MODEL_DIR)
-            trainer.model = VitsModel.from_pretrained(TTS_MODEL_DIR).to(trainer.device)
+            model_result = VitsModel.from_pretrained(TTS_MODEL_DIR)
+            if isinstance(model_result, tuple):
+                trainer.model = model_result[0]
+            else:
+                trainer.model = model_result
+            if trainer.model is not None:
+                trainer.model.to(trainer.device)  # type: ignore
         except:
             raise HTTPException(400, "Model not trained yet")
     
-    inputs = trainer.tokenizer(text, return_tensors="pt").to(trainer.device)
+    if trainer.tokenizer is None or trainer.model is None:
+        raise HTTPException(400, "Model or tokenizer not loaded")
+    
+    inputs = trainer.tokenizer(text, return_tensors="pt")
+    inputs = {k: v.to(trainer.device) if hasattr(v, 'to') else v for k, v in inputs.items()}
     with torch.no_grad():
         outputs = trainer.model(**inputs)
     
