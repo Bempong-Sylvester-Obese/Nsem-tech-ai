@@ -24,7 +24,7 @@ def transcribe_audio():
                 
             audio_path = os.path.join(AUDIO_DIR, filename)
             if not os.path.exists(audio_path):
-                print(f"⚠️ Missing: {filename}")
+                print(f"Missing: {filename}")
                 continue
                 
             # Play audio
@@ -49,6 +49,6 @@ if __name__ == "__main__":
     try:
         transcribe_audio()
     except Exception as e:
-        print(f"❌ Error: {e}")
+        print(f"Error: {e}")
     finally:
         pygame.mixer.quit()
