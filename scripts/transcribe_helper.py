@@ -4,8 +4,8 @@ from pathlib import Path
 import pygame  # For audio playback
 
 # Configuration
-METADATA_PATH = "datasets/raw_data/metadata.csv"
-AUDIO_DIR = "datasets/raw_data/wavs"
+METADATA_PATH = "datasets/raw/metadata.csv"
+AUDIO_DIR = "datasets/raw/wavs"
 pygame.mixer.init()
 
 def transcribe_audio():
@@ -43,7 +43,7 @@ def transcribe_audio():
             if i % 10 == 0:
                 f.flush()
                 
-    print("✅ All files processed!")
+    print("All files processed!")
 
 if __name__ == "__main__":
     try:
