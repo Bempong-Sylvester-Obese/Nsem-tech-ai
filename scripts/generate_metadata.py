@@ -2,7 +2,7 @@ from pathlib import Path
 import csv
 
 # Configuration
-AUDIO_DIR = Path("datasets/raw_data/wavs")  # Keep this path even for MP3 files
+AUDIO_DIR = Path("datasets/raw_data/wavs")  
 METADATA_PATH = Path("datasets/raw_data/metadata.csv")
 
 def generate_metadata():
