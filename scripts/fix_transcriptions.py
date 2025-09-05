@@ -10,7 +10,7 @@ CORRECTIONS = {
 
 def fix_transcriptions():
     transcripts = []
-    for txt_file in Path("datasets/raw_data/whisper_output").glob("*.txt"):
+    for txt_file in Path("datasets/raw/whisper_output").glob("*.txt"):
         with open(txt_file, "r") as f:
             text = f.read()
         
@@ -25,7 +25,7 @@ def fix_transcriptions():
     
     # Save corrected metadata
     pd.DataFrame(transcripts).to_csv(
-        "datasets/raw_data/metadata.csv", 
+        "datasets/raw/metadata.csv", 
         sep="|", 
         header=False, 
         index=False

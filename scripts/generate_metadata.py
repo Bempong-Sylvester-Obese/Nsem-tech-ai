@@ -2,8 +2,8 @@ from pathlib import Path
 import csv
 
 # Configuration
-AUDIO_DIR = Path("datasets/raw_data/wavs")  
-METADATA_PATH = Path("datasets/raw_data/metadata.csv")
+AUDIO_DIR = Path("datasets/raw/wavs")  
+METADATA_PATH = Path("datasets/raw/metadata.csv")
 
 def generate_metadata():
     # Find all MP3 files (case insensitive)
