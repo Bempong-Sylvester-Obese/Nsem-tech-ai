@@ -40,7 +40,21 @@ Committed CSVs may contain speaker demographics. Do not republish without consen
 
 ## Git history
 
-If `.venv` was ever committed, consider history rewrite (`git filter-repo`) before open-sourcing, and rotate any secrets that might have been present locally.
+**Completed:** `.venv/` was removed from all branches with `git filter-repo` (May 2026).
+
+If you cloned before the rewrite:
+
+```bash
+git fetch origin
+git checkout main
+git reset --hard origin/main
+```
+
+Or re-clone. Old commit SHAs will not match.
+
+To repeat locally: `./scripts/purge-venv-from-history.sh`
+
+Rotate any secrets that might have been present in the old virtual environment.
 
 ## Auditing dependencies
 
