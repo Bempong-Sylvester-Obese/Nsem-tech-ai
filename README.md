@@ -117,11 +117,27 @@ flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000   # Android emulator
 
 ### Tests
 
+The suite lives in `tests/` and covers the API, TTS/ASR services, dataset scripts, and preprocessing.
+
 ```bash
 pip install -r requirements.txt
-pytest tests/ -m "not network"   # offline smoke tests
-pytest tests/ -m network         # includes Google TTS (requires network + ffmpeg)
+# ffmpeg required for TTS tests
+
+PYTHONPATH=. pytest tests/ -m "not network and not slow"   # fast unit + API tests (~25)
+PYTHONPATH=. pytest tests/ -m network                      # Google TTS integration
+PYTHONPATH=. pytest tests/ -m slow                         # Whisper ASR smoke test
+PYTHONPATH=. pytest tests/                                 # full suite
 ```
+
+| File | What it tests |
+|------|----------------|
+| `test_api.py` | HTTP endpoints (`/health`, `/synthesize`, `/transcribe`) |
+| `test_tts_service.py` | Phoneme cleanup, voice validation, SQLite TTS cache |
+| `test_asr_service.py` | Phrase loading, extension checks, ASR cache |
+| `test_metadata_utils.py` | Metadata script helpers |
+| `test_scripts.py` | Transcription correction + CSV generation |
+| `test_preprocess.py` | MFCC feature extraction pipeline |
+| `test_config.py` | Path and environment configuration |
 
 ---
 

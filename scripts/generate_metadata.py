@@ -37,8 +37,5 @@ def generate_metadata():
     return True
 
 if __name__ == "__main__":
-    if not AUDIO_DIR.exists():
-        print(f"Error: Directory not found - {AUDIO_DIR}")
-        print("Please ensure your audio files are in datasets/raw_data/wavs/")
-    else:
-        generate_metadata()
+    if not generate_metadata():
+        print("Please ensure your audio files are in datasets/raw/wavs/")

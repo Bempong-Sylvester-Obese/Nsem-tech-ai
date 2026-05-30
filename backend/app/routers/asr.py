@@ -15,6 +15,8 @@ async def transcribe(audio: UploadFile = File(...)):
         if not content:
             raise HTTPException(400, "Empty audio file")
         return transcribe_bytes(content, audio.filename)
+    except HTTPException:
+        raise
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from exc
     except RuntimeError as exc:
