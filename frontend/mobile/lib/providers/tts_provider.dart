@@ -37,13 +37,11 @@ class TTSProvider with ChangeNotifier {
     notifyListeners();
     
     try {
-      final request = http.MultipartRequest(
-        'POST',
-        Uri.parse('${ApiEndpoints.baseUrl}${ApiEndpoints.ttsSynthesize}'),
-      );
-      
-      request.fields['text'] = _inputText;
-      
+      final uri = Uri.parse('${ApiEndpoints.baseUrl}${ApiEndpoints.ttsSynthesize}');
+      final request = http.MultipartRequest('POST', uri)
+        ..fields['text'] = _inputText.trim()
+        ..fields['voice'] = 'male';
+
       final response = await request.send();
       
       if (response.statusCode == 200) {

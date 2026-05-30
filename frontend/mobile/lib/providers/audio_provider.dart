@@ -100,11 +100,8 @@ class AudioProvider with ChangeNotifier {
       final responseBody = await response.stream.bytesToString();
       
       if (response.statusCode == 200) {
-        // Parse JSON response
-        final data = responseBody; // You might want to use jsonDecode here
-        _transcription = data.contains('"text"') 
-            ? data.split('"text"')[1].split('"')[1] 
-            : data;
+        final data = jsonDecode(responseBody) as Map<String, dynamic>;
+        _transcription = (data['text'] as String?) ?? '';
         _errorMessage = '';
       } else {
         throw Exception('Server error: ${response.statusCode}');

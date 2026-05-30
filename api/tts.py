@@ -1,3 +1,4 @@
+# Deprecated: use unified API at backend.app.main (uvicorn backend.app.main:app).
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse  
 from gtts import gTTS

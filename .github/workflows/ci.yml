@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Offline API tests
+        run: PYTHONPATH=. pytest tests/ -m "not network and not slow" -v
+
+      - name: TTS integration test
+        run: PYTHONPATH=. pytest tests/ -m network -v
+
+      - name: ASR smoke test
+        run: PYTHONPATH=. pytest tests/ -m slow -v

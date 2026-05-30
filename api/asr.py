@@ -1,3 +1,4 @@
+# Deprecated: use unified API at backend.app.main (uvicorn backend.app.main:app).
 import os
 import hashlib
 import sqlite3

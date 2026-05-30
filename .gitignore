@@ -1,16 +1,44 @@
 # System files
 .DS_Store
+Thumbs.db
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
 
 # DVC
 .dvc/tmp/
 
-# Datasets
+# Local config and runtime artifacts
+/config.local
+/tmp/
+/cache/
+*.db
+tts_cache/
+tts_audio/
+models/
+temp_audio.wav
+
+# Datasets (large binaries — use DVC or external storage)
 datasets/raw_data/
 /raw_data
 
-# Frontend/Mobile specific (from frontend/mobile/.gitignore)
-# (no additional content from mobile .gitignore)
+# IDE
+.idea/
+.vscode/
 
-/config.local
-/tmp
-/cache
+# Flutter / Dart
+frontend/mobile/.dart_tool/
+frontend/mobile/build/
+frontend/mobile/.flutter-plugins
+frontend/mobile/.flutter-plugins-dependencies
+frontend/mobile/.packages
+frontend/mobile/pubspec.lock

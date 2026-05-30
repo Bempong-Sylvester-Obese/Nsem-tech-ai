@@ -6,6 +6,7 @@ python-multipart>=0.0.6
 
 # Text-to-Speech
 gtts>=2.4.0
+pydub>=0.25.1
 
 # Speech Recognition and AI Models
 openai-whisper>=20231117

@@ -81,7 +81,7 @@ class TextToSpeechTab extends StatelessWidget {
                                     valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                   ),
                                 )
-                              : const Icon(Icons.synthesize),
+                              : const Icon(Icons.record_voice_over),
                           label: Text(
                             ttsProvider.isSynthesizing 
                                 ? AppStrings.synthesizingAudio

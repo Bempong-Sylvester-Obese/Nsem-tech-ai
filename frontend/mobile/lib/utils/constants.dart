@@ -14,7 +14,11 @@ class AppColors {
 }
 
 class ApiEndpoints {
-  static const String baseUrl = 'http://localhost:8000';
+  // Use http://10.0.2.2:8000 on Android emulator; device LAN IP on physical phones.
+  static const String baseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'http://localhost:8000',
+  );
   static const String asrTranscribe = '/transcribe';
   static const String asrTrain = '/train';
   static const String ttsSynthesize = '/synthesize';

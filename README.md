@@ -89,11 +89,38 @@
 ### 🖥️ Installation
 
 ```bash
-# Backend
-cd backend && pip install -r requirements.txt
+# From repository root
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 
-# Frontend
+# System dependency for audio conversion (TTS)
+# Debian/Ubuntu: sudo apt-get install -y ffmpeg
+# macOS: brew install ffmpeg
+
+# Start unified API (ASR + TTS on port 8000)
+./scripts/run_api.sh
+# Or: PYTHONPATH=. uvicorn backend.app.main:app --host 0.0.0.0 --port 8000
+
+# Flutter app
 cd frontend/mobile && flutter pub get
+flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000   # Android emulator
+```
+
+### API endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/health` | Health check |
+| POST | `/transcribe` | Upload audio (`audio` field) → JSON `{ "text", "source" }` |
+| POST | `/synthesize` | Form `text`, optional `voice` → WAV audio file |
+
+### Tests
+
+```bash
+pip install -r requirements.txt
+pytest tests/ -m "not network"   # offline smoke tests
+pytest tests/ -m network         # includes Google TTS (requires network + ffmpeg)
 ```
 
 ---

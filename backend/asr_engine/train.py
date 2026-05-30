@@ -11,8 +11,8 @@ import pandas as pd
 @dataclass
 class TrainingConfig:
     base_model: str = "openai/whisper-tiny"
-    data_dir: str = "/Users/sylvesterbempong/Desktop/Nsem-tech-ai-1/datasets/raw_data/wavs"  # Absolute path
-    output_dir: str = "/Users/sylvesterbempong/Desktop/Nsem-tech-ai-1/models/akan_whisper"
+    data_dir: str = str(Path(__file__).resolve().parents[2] / "datasets" / "raw_data" / "wavs")
+    output_dir: str = str(Path(__file__).resolve().parents[2] / "models" / "akan_whisper")
     batch_size: int = 2
     num_epochs: int = 3
     learning_rate: float = 1e-5
