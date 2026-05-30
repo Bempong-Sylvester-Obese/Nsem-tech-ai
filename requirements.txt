@@ -1,5 +1,5 @@
 # Nsem Tech AI - API runtime dependencies
-fastapi>=0.104.0,<1.0.0
+fastapi>=0.136.3,<1.0.0
 uvicorn[standard]>=0.24.0,<1.0.0
 python-multipart>=0.0.6,<1.0.0
 
