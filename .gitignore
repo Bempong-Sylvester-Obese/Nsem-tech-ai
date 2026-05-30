@@ -2,6 +2,11 @@
 .DS_Store
 Thumbs.db
 
+# Secrets and local config
+.env
+.env.*
+!.env.example
+
 # Python
 .venv/
 venv/

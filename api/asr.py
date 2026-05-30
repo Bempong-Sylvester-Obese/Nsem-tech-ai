@@ -12,6 +12,8 @@ from transformers.trainer_seq2seq import Seq2SeqTrainer
 from datasets import load_dataset, Dataset, DatasetDict, IterableDataset
 import torch
 
+from backend.app.legacy_guard import assert_training_api_enabled
+
 # Configuration
 AKAN_DATASET_PATH = "datasets/raw_data"  # Updated path
 MODEL_TYPE = "whisper"
@@ -85,6 +87,7 @@ def init_db():
 
 @app.post("/train")
 async def train_akan_model(epochs: int = 3):
+    assert_training_api_enabled()
     try:
         # 1. Prepare dataset
         dataset = load_dataset("audiofolder", data_dir=AKAN_DATASET_PATH)

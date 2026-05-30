@@ -80,6 +80,10 @@
 
 ---
 
+## 🔒 Security
+
+See [SECURITY.md](SECURITY.md) for deployment hardening, API keys, and privacy notes.
+
 ## 🚀 Getting Started
 
 > **Prerequisites:**

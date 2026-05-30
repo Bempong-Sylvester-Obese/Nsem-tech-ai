@@ -9,7 +9,7 @@ from backend.app.config import (
     ASR_CACHE_DB,
     ASR_LAZY_LOAD,
     MODEL_DIR,
-    ROOT_DIR,
+    CACHE_DIR,
     WHISPER_MODEL_SIZE,
 )
 
@@ -127,9 +127,9 @@ def init_asr_db() -> None:
 
 
 def transcribe_bytes(audio_content: bytes, filename: str) -> dict[str, str]:
-    if not filename.lower().endswith((".wav", ".mp3", ".m4a", ".ogg")):
-        raise ValueError("Only WAV, MP3, M4A, and OGG files are supported")
+    from backend.app.security.audio_validation import validate_audio_upload
 
+    validate_audio_upload(audio_content, filename)
     audio_hash = hashlib.md5(audio_content).hexdigest()
     with sqlite3.connect(ASR_CACHE_DB) as conn:
         cursor = conn.cursor()
@@ -139,7 +139,7 @@ def transcribe_bytes(audio_content: bytes, filename: str) -> dict[str, str]:
         if cached := cursor.fetchone():
             return {"text": cached[0], "source": "cache"}
 
-    temp_path = ROOT_DIR / "cache" / f"asr_{audio_hash}.wav"
+    temp_path = CACHE_DIR / f"asr_{audio_hash}.wav"
     temp_path.parent.mkdir(parents=True, exist_ok=True)
     temp_path.write_bytes(audio_content)
 

@@ -1,0 +1,4 @@
+-r requirements.txt
+
+# Optional tooling for scripts/ (not required for the API server)
+pygame>=2.5.0,<3.0.0

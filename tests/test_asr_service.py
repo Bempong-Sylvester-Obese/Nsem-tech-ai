@@ -17,8 +17,8 @@ def test_akan_asr_default_phrases():
 
 
 def test_transcribe_bytes_rejects_bad_extension(isolated_cache: Path):
-    with pytest.raises(ValueError, match="Only WAV"):
-        transcribe_bytes(b"data", "notes.pdf")
+    with pytest.raises(ValueError, match="Unsupported file type"):
+        transcribe_bytes(b"x" * 32, "notes.pdf")
 
 
 def test_transcribe_bytes_uses_cache(isolated_cache: Path, sample_wav_bytes: bytes):

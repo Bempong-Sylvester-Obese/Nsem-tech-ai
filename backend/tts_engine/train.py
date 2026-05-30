@@ -3,6 +3,7 @@ import torch
 from pathlib import Path
 from datetime import datetime
 from fastapi import FastAPI, HTTPException
+from backend.app.legacy_guard import assert_training_api_enabled
 from typing import Optional, Dict, Any, List, Union
 import numpy as np
 import pandas as pd
@@ -138,6 +139,7 @@ async def start_training(
     learning_rate: float = 1e-4,
     resume: bool = False
 ) -> Dict[str, Any]:
+    assert_training_api_enabled()
     trainer = AkanTTSTrainer()
     
     if resume and Path(TTS_MODEL_DIR).exists():

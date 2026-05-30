@@ -14,22 +14,28 @@ class AppColors {
 }
 
 class ApiEndpoints {
-  // Use http://10.0.2.2:8000 on Android emulator; device LAN IP on physical phones.
+  // Development: http://10.0.2.2:8000 (Android emulator) or http://127.0.0.1:8000
+  // Production:  --dart-define=API_BASE_URL=https://your-api.example.com
+  //              --dart-define=API_KEY=your-secret (sent as X-API-Key header)
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://localhost:8000',
+    defaultValue: 'http://127.0.0.1:8000',
   );
+  static const String apiKey = String.fromEnvironment('API_KEY', defaultValue: '');
+
   static const String asrTranscribe = '/transcribe';
-  static const String asrTrain = '/train';
   static const String ttsSynthesize = '/synthesize';
-  static const String ttsTrain = '/train';
+
+  static Map<String, String> get authHeaders {
+    if (apiKey.isEmpty) return {};
+    return {'X-API-Key': apiKey};
+  }
 }
 
 class AppStrings {
   static const String appName = 'Nsem Tech AI';
   static const String appDescription = 'Akan Speech Recognition & TTS';
-  
-  // Home Screen
+
   static const String speechToText = 'Speech to Text';
   static const String textToSpeech = 'Text to Speech';
   static const String recordAudio = 'Record Audio';
@@ -37,8 +43,7 @@ class AppStrings {
   static const String enterText = 'Enter Akan Text';
   static const String synthesize = 'Synthesize';
   static const String playAudio = 'Play Audio';
-  
-  // Messages
+
   static const String recordingStarted = 'Recording started...';
   static const String recordingStopped = 'Recording stopped';
   static const String processingAudio = 'Processing audio...';
@@ -48,8 +53,7 @@ class AppStrings {
   static const String noAudioFile = 'No audio file selected';
   static const String transcriptionSuccess = 'Transcription completed';
   static const String synthesisSuccess = 'Audio synthesis completed';
-  
-  // Errors
+
   static const String permissionDenied = 'Microphone permission denied';
   static const String networkError = 'Network error occurred';
   static const String audioError = 'Audio processing error';
@@ -61,11 +65,11 @@ class AppSizes {
   static const double paddingMedium = 16.0;
   static const double paddingLarge = 24.0;
   static const double paddingXLarge = 32.0;
-  
+
   static const double radiusSmall = 8.0;
   static const double radiusMedium = 12.0;
   static const double radiusLarge = 16.0;
-  
+
   static const double iconSize = 24.0;
   static const double buttonHeight = 48.0;
-} 
+}

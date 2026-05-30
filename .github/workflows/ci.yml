@@ -20,10 +20,13 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
 
       - name: Install Python dependencies
-        run: pip install -r requirements.txt
+        run: pip install -r requirements-dev.txt
 
-      - name: Offline API tests
-        run: PYTHONPATH=. pytest tests/ -m "not network and not slow" -v
+      - name: Dependency audit
+        run: pip-audit -r requirements.txt || true
+
+      - name: Unit and API tests (offline)
+        run: PYTHONPATH=. pytest tests/ -m "not network and not slow" -v --tb=short
 
       - name: TTS integration test
         run: PYTHONPATH=. pytest tests/ -m network -v
